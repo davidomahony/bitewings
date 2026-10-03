@@ -1,3 +1,5 @@
+import os
+
 _base_ = './config_maskdino.py'
 
 # model settings
@@ -129,5 +131,5 @@ model = dict(
             max_per_img=100,
             mask_thr_binary=0.5)))
 
-load_from = '../checkpoints/maskrcnn_coco.pth'
-work_dir = 'work_dirs/odonto_bitewings_maskrcnn'
+load_from = os.path.join(_base_.checkpoints_dir, 'maskrcnn_coco.pth')
+work_dir = os.path.join(_base_.work_dirs, 'odonto_bitewings_maskrcnn')

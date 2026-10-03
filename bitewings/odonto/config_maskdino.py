@@ -1,5 +1,13 @@
-_base_ = '../../mmdetection/projects/DENTEX/configs/maskdino_r50_coco_multilabel.py'
+import os
+import sys
+
+_base_ = '../../onedl-mmdetection/projects/DENTEX/configs/maskdino_r50_coco_multilabel.py'
 # _base_ = './maskdino_swin-l_coco_multilabel.py'
+
+# make the repository and the mmdetection submodule importable from any working directory
+repo_dir = os.path.abspath(os.path.join('{{ fileDirname }}', '..', '..'))
+sys.path.append(repo_dir)
+sys.path.append(os.path.join(repo_dir, 'onedl-mmdetection'))
 
 custom_imports = dict(
     imports=[
@@ -18,9 +26,12 @@ custom_imports = dict(
     allow_failed_imports=False,
 )
 
-odonto_root = '../data/odontoai/bitewings/'
+# paths come from BITEWINGS_ODONTO_ROOT / BITEWINGS_WORK_DIRS / BITEWINGS_CHECKPOINTS (see bitewings/paths.py)
+odonto_root = os.path.join('{{$BITEWINGS_ODONTO_ROOT:../data/odontoai}}', 'bitewings', '')
+checkpoints_dir = '{{$BITEWINGS_CHECKPOINTS:../checkpoints}}'
+work_dirs = '{{$BITEWINGS_WORK_DIRS:work_dirs}}'
 fold = 1
-work_dir = 'work_dirs/odonto_bitewings_maskdino/'
+work_dir = os.path.join(work_dirs, 'odonto_bitewings_maskdino', '')
 
 classes = [
    'tooth-11','tooth-12','tooth-13','tooth-14','tooth-15','tooth-16','tooth-17','tooth-18',
@@ -106,7 +117,7 @@ model = dict(
         num_stuff_classes=0,
     ),
 )
-load_from = '../checkpoints/maskdino_coco.pth'
+load_from = os.path.join(checkpoints_dir, 'maskdino_coco.pth')
 
 default_hooks = dict(
     checkpoint=dict(save_best='coco/segm_mAP'),

@@ -1,4 +1,12 @@
+import os
+import sys
+
 _base_ = 'mmdet::swin/mask-rcnn_swin-t-p4-w7_fpn_ms-crop-3x_coco.py'
+
+# make the repository and the mmdetection submodule importable from any working directory
+repo_dir = os.path.abspath(os.path.join('{{ fileDirname }}', '..', '..'))
+sys.path.append(repo_dir)
+sys.path.append(os.path.join(repo_dir, 'onedl-mmdetection'))
 
 custom_imports = dict(
     imports=[
@@ -19,9 +27,12 @@ classes = [
 ]
 
 
-root = '../data/Netherlands/'
+# paths come from BITEWINGS_DATA_ROOT / BITEWINGS_WORK_DIRS / BITEWINGS_CHECKPOINTS (see bitewings/paths.py)
+root = os.path.join('{{$BITEWINGS_DATA_ROOT:../data/Netherlands}}', '')
+checkpoints_dir = '{{$BITEWINGS_CHECKPOINTS:../checkpoints}}'
+work_dirs = '{{$BITEWINGS_WORK_DIRS:work_dirs}}'
 fold = 1
-work_dir = 'work_dirs/chart_filing_maskrcnn/'
+work_dir = os.path.join(work_dirs, 'chart_filing_maskrcnn', '')
 filter_empty = False
 
 train_pipeline = [
@@ -182,7 +193,7 @@ model = dict(
         mask_head=dict(num_classes=len(classes)),
     ),
 )
-load_from = '../checkpoints/maskrcnn_odonto.pth'
+load_from = os.path.join(checkpoints_dir, 'maskrcnn_odonto.pth')
 
 max_epochs = 36
 train_cfg = dict(

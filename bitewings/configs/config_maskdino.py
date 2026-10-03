@@ -1,3 +1,5 @@
+import os
+
 _base_ = './config_maskrcnn.py'
 
 custom_imports = dict(
@@ -11,7 +13,7 @@ custom_imports = dict(
     allow_failed_imports=False,
 )
 
-work_dir = 'work_dirs/chart_filing_maskdino/'
+work_dir = os.path.join(_base_.work_dirs, 'chart_filing_maskdino', '')
 
 model = dict(
     _delete_=True,
@@ -115,7 +117,7 @@ model = dict(
             focus_on_box=False),            
         max_per_image=300),
     init_cfg=None)
-load_from = '../checkpoints/maskdino_odonto.pth'
+load_from = os.path.join(_base_.checkpoints_dir, 'maskdino_odonto.pth')
 
 embed_multi = dict(lr_mult=1.0, decay_mult=0.0)
 optim_wrapper = dict(

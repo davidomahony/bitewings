@@ -1,6 +1,8 @@
+import argparse
 from collections import defaultdict
 import json
 from pathlib import Path
+import sys
 
 import cv2
 import matplotlib.pyplot as plt
@@ -11,6 +13,10 @@ from mmengine.structures import InstanceData
 from mmdet.visualization import DetLocalVisualizer
 from mmdet.datasets import CocoDataset
 
+sys.path.append(str(Path(__file__).resolve().parents[2]))
+sys.path.append(str(Path(__file__).resolve().parents[2] / 'onedl-mmdetection'))
+
+from bitewings import paths
 from projects.DENTEX.visualization.local_visualizer import MulticlassDetLocalVisualizer
 
 
@@ -132,8 +138,21 @@ def visualize_hierarchy(coco_dict: dict):
 
 
 if __name__ == '__main__':
-    root = Path('data/Germany')
-    annotation_example = '8CFA4C19-D474-4C5F-9570-017FC90F274A.jpg'
+    parser = argparse.ArgumentParser(description='Figure comparing flat and hierarchical annotations of one bitewing.')
+    parser.add_argument(
+        '--data-root', type=Path, default=paths.data_root(),
+        help='Folder with annotations.json and annotations_fdi.json (default: $BITEWINGS_DATA_ROOT '
+             f'or {paths.DEFAULT_DATA_ROOT}).',
+    )
+    parser.add_argument(
+        '--image', default=None,
+        help='File name of the bitewing to show (default: the first image in the dataset; the paper '
+             'used 8CFA4C19-D474-4C5F-9570-017FC90F274A.jpg from the unreleased German data).',
+    )
+    args = parser.parse_args()
+    root = args.data_root
+    with open(root / 'annotations.json', 'r') as f:
+        annotation_example = args.image or json.load(f)['images'][0]['file_name']
 
     with open(root / 'annotations.json', 'r') as f:
         coco_dict = json.load(f)

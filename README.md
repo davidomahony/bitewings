@@ -15,6 +15,29 @@ See `INSTALL.md` for installation instructions.
 The panoramic radiographs from the OdontoAI platform can be requested from [the platform's website](https://odontoai.com/). Furthermore, model checkpoints and the data collected for the study can be requested at the [Radboud Data Repository](https://doi.org/10.34973/1bf3-j248).
 
 
+## Paths
+
+Data, checkpoint and output locations are not hard-coded. Every config file and script reads them from these environment variables, and every script also accepts them as command-line options (`--data-root`, `--work-dirs`, `--odonto-root`):
+
+| Variable | Contents | Default |
+|---|---|---|
+| `BITEWINGS_DATA_ROOT` | Dataset folder with `images/`, `annotations.json` and (after preprocessing) `splits/` | `../data/Netherlands` |
+| `BITEWINGS_CHECKPOINTS` | Folder with the `*.pth` checkpoints | `../checkpoints` |
+| `BITEWINGS_WORK_DIRS` | Folder for training runs and predictions (`chart_filing_<model>/`, `odonto_bitewings_<model>/`) | `work_dirs` |
+| `BITEWINGS_ODONTO_ROOT` | OdontoAI data for pre-training (output goes to `<root>/bitewings`) | `../data/odontoai` |
+
+The defaults reproduce the original layout, so the commands below work unchanged when the data sits next to the repository. Config files and scripts can be run from any working directory; `PYTHONPATH=.` is no longer required. For example:
+
+```bash
+export BITEWINGS_DATA_ROOT=/mnt/data/Netherlands
+export BITEWINGS_CHECKPOINTS=/mnt/checkpoints
+export BITEWINGS_WORK_DIRS=/mnt/runs
+
+python bitewings/preprocess/preprocess.py
+python onedl-mmdetection/tools/train.py bitewings/configs/config_hierarchical.py
+```
+
+
 ## Inference
 
 To run the model on your own bitewings, first make an empty COCO file by running `bitewings/inference/init_images.py`. The model can be run on these images using this command:
@@ -38,7 +61,7 @@ choosing the input directory for `<path>` and a model architecture for `<model>`
 
 If you would like to skip this step, model checkpoints pre-trained on COCO and OdontoAI are made available on request.
 
-**Preprocessing** Unzip the downloaded data from the OdontoAI platform to the `../data/` folder and run `bitewings/odonto/preprocess.py` to combine the train and validation images and to split the data.
+**Preprocessing** Unzip the downloaded data from the OdontoAI platform to the `../data/odontoai` folder (or set `BITEWINGS_ODONTO_ROOT`) and run `bitewings/odonto/preprocess.py` to combine the train and validation images and to split the data.
 
 **Training** Following the preprocessing, the Mask DINO, Mask R-CNN, and SparseInst models can be pre-trained by running the following command:
 
@@ -53,7 +76,7 @@ choosing a model architecture for `<model>`. The training run will be logged usi
 
 ### Preprocessing
 
-Unzip the downloaded data collected from The Netherlands to the `../data/` folder. As the teeth and tooth findings were annotated independently, each tooth finding needs to be matched to a tooth with corresponding FDI number. Please run `bitewings/preprocess/preprocess.py` to automatically assign tooth findings to teeth and to split the images into train, validation, and test.
+Unzip the downloaded data collected from The Netherlands to the `../data/Netherlands` folder (or set `BITEWINGS_DATA_ROOT`). As the teeth and tooth findings were annotated independently, each tooth finding needs to be matched to a tooth with corresponding FDI number. Please run `bitewings/preprocess/preprocess.py` to automatically assign tooth findings to teeth and to split the images into train, validation, and test.
 
 Furthermore, `bitewings/preprocess/intensities.py` and `bitewings/preprocess/prevalences.py` can be run to visualize the intensity distribution and to show the tooth finding prevalances of the bitewings from The Netherlands. Please note that the data from The Netherlands does not include implants.
 

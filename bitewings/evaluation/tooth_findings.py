@@ -1,5 +1,7 @@
+import argparse
 from pathlib import Path
 import pickle
+import sys
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -10,6 +12,10 @@ from sklearn.metrics import(
     ConfusionMatrixDisplay, confusion_matrix,
 )
 import torch
+
+sys.path.append(str(Path(__file__).resolve().parents[2]))
+
+from bitewings import paths
 
 
 def draw_confusion_matrix(cm, labels, ax, recolor: bool=False):
@@ -269,16 +275,16 @@ def evaluate_model(work_dir: Path):
     if 'hierarchical' in work_dir.name:
         return evaluate_hierarchical(work_dir)
     else:
-        return evaluate_flat(Path('work_dirs/chart_filing_hierarchical'), work_dir)
-    
+        return evaluate_flat(work_dir.parent / 'chart_filing_hierarchical', work_dir)
 
 
-def compute_gts_scores():
+
+def compute_gts_scores(base: Path):
     work_dirs = [
-        Path('work_dirs/chart_filing_sparseinst'),
-        Path('work_dirs/chart_filing_maskrcnn'),
-        Path('work_dirs/chart_filing_maskdino'),
-        Path('work_dirs/chart_filing_hierarchical'),
+        paths.method_work_dir('sparseinst', base),
+        paths.method_work_dir('maskrcnn', base),
+        paths.method_work_dir('maskdino', base),
+        paths.method_work_dir('hierarchical', base),
     ]
     gt_idxs, gts, scores = [], [], []
     for work_dir in work_dirs:
@@ -306,6 +312,14 @@ def compute_gts_scores():
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='ROC curves and confusion matrices for tooth findings.')
+    parser.add_argument(
+        '--work-dirs', type=Path, default=paths.work_dirs(),
+        help='Folder with the chart_filing_<method> run folders (default: $BITEWINGS_WORK_DIRS '
+             f'or {paths.DEFAULT_WORK_DIRS}).',
+    )
+    args = parser.parse_args()
+
     classes = ['Implant', 'Crown', 'Pontic', 'Filling', 'Root canal treatment', 'Caries lesion', 'Calculus deposit']
 
     fig_roc, axs_roc = plt.subplots(2, 4, figsize=(17.5, 8.5))
@@ -313,7 +327,7 @@ if __name__ == '__main__':
     axs_roc, axs_cm = axs_roc.flatten(), axs_cm.flatten()
     for name, work_dir, _, gt, score in zip(
         ['SparseInst', 'Mask R-CNN', 'Mask DINO', 'Hierarchical'],
-        *compute_gts_scores(),
+        *compute_gts_scores(args.work_dirs),
     ):
         for i, label in enumerate(classes):
             if gt[:, i].sum() <= 1:

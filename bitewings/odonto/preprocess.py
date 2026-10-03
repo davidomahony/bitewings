@@ -1,13 +1,19 @@
+import argparse
 import copy
 import json
 from pathlib import Path
 import shutil
+import sys
 from typing import List
 
 import numpy as np
 from pycocotools.coco import COCO
 from sklearn.model_selection import KFold
 from tqdm import tqdm
+
+sys.path.append(str(Path(__file__).resolve().parents[2]))
+
+from bitewings import paths
 
 
 def combine_train_val(
@@ -197,8 +203,14 @@ def split(
 
 
 if __name__ == '__main__':
-    root = Path('../data/odontoai')
-    out_dir = Path('../data/odontoai/bitewings')
+    parser = argparse.ArgumentParser(description='Crop OdontoAI panoramics into bitewing-like images.')
+    parser.add_argument(
+        '--odonto-root', type=Path, default=paths.odonto_root(),
+        help='Folder with the OdontoAI data (default: $BITEWINGS_ODONTO_ROOT '
+             f'or {paths.DEFAULT_ODONTO_ROOT}). Output goes to <odonto-root>/bitewings.',
+    )
+    root = parser.parse_args().odonto_root
+    out_dir = root / 'bitewings'
 
     coco = combine_train_val(root, out_dir)
     coco = select_bitewings(root, coco, out_dir)

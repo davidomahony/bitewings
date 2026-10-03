@@ -1,5 +1,7 @@
+import argparse
 from pathlib import Path
 import pickle
+import sys
 
 import cv2
 from mmengine.structures import InstanceData
@@ -10,6 +12,10 @@ import torch
 from tqdm import tqdm
 
 from mmdet.visualization import DetLocalVisualizer
+
+sys.path.append(str(Path(__file__).resolve().parents[2]))
+
+from bitewings import paths
 
 
 palette = [(220, 20, 60), (119, 11, 32), (0, 0, 142), (0, 0, 230), (106, 0, 228),
@@ -243,21 +249,33 @@ def save_flat(
 
 
 if __name__ == '__main__':
-    out_dir = Path('side_by_side')
+    parser = argparse.ArgumentParser(description='Side-by-side figures of annotations and predictions.')
+    parser.add_argument(
+        '--work-dirs', type=Path, default=paths.work_dirs(),
+        help='Folder with the chart_filing_<method> run folders (default: $BITEWINGS_WORK_DIRS '
+             f'or {paths.DEFAULT_WORK_DIRS}).',
+    )
+    parser.add_argument(
+        '--out-dir', type=Path, default=Path('side_by_side'),
+        help='Folder to write the figures to (default: side_by_side).',
+    )
+    args = parser.parse_args()
+
+    out_dir = args.out_dir
     out_dir.mkdir(parents=True, exist_ok=True)
 
     num_images = 10
 
     img_paths, top_rows = save_hierarchical(
-        Path('work_dirs/chart_filing_hierarchical'),
+        paths.method_work_dir('hierarchical', args.work_dirs),
         num_images=num_images,
     )
     pred_images = []
     for work_dir, thresholds in zip(
         [
-            Path('work_dirs/chart_filing_maskrcnn'),
-            Path('work_dirs/chart_filing_maskdino'),
-            Path('work_dirs/chart_filing_sparseinst'),
+            paths.method_work_dir('maskrcnn', args.work_dirs),
+            paths.method_work_dir('maskdino', args.work_dirs),
+            paths.method_work_dir('sparseinst', args.work_dirs),
         ],
         [
             torch.tensor([0.0350, 0.9920, 0.0791, 0.4384, 0.5576, 0.0601, 0.2432]),

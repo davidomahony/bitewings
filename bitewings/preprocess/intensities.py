@@ -1,4 +1,6 @@
+import argparse
 from pathlib import Path
+import sys
 
 import cv2
 import matplotlib.pyplot as plt
@@ -7,9 +9,20 @@ import pandas as pd
 import seaborn as sns
 from tqdm import tqdm
 
+sys.path.append(str(Path(__file__).resolve().parents[2]))
+
+from bitewings import paths
+
 
 if __name__ == '__main__':
-    roots = {'Netherlands': Path('../data/Netherlands/images')}
+    parser = argparse.ArgumentParser(description='Plot the pixel-intensity distribution of the images.')
+    parser.add_argument(
+        '--data-root', type=Path, default=paths.data_root(),
+        help='Folder with images/ (default: $BITEWINGS_DATA_ROOT '
+             f'or {paths.DEFAULT_DATA_ROOT}).',
+    )
+    data_root = parser.parse_args().data_root
+    roots = {data_root.name: data_root / 'images'}
 
     bins = np.zeros((len(roots), 256))
     for i, root in enumerate(roots.values()):

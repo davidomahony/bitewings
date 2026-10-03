@@ -1,9 +1,15 @@
+import argparse
 from collections import defaultdict
 from pathlib import Path
 import pickle
+import sys
 
 import pycocotools.mask as maskUtils
 import torch
+
+sys.path.append(str(Path(__file__).resolve().parents[2]))
+
+from bitewings import paths
 
 
 def evaluate_hierarchical(
@@ -197,7 +203,15 @@ def evaluate_flat(
 
 
 if __name__ == '__main__':
-    evaluate_hierarchical(Path('work_dirs/chart_filing_hierarchical'))
-    evaluate_flat(Path('work_dirs/chart_filing_maskrcnn'))
-    evaluate_flat(Path('work_dirs/chart_filing_maskdino'))
-    evaluate_flat(Path('work_dirs/chart_filing_sparseinst'))
+    parser = argparse.ArgumentParser(description='Tooth segmentation and labelling metrics.')
+    parser.add_argument(
+        '--work-dirs', type=Path, default=paths.work_dirs(),
+        help='Folder with the chart_filing_<method> run folders (default: $BITEWINGS_WORK_DIRS '
+             f'or {paths.DEFAULT_WORK_DIRS}).',
+    )
+    base = parser.parse_args().work_dirs
+
+    evaluate_hierarchical(paths.method_work_dir('hierarchical', base))
+    evaluate_flat(paths.method_work_dir('maskrcnn', base))
+    evaluate_flat(paths.method_work_dir('maskdino', base))
+    evaluate_flat(paths.method_work_dir('sparseinst', base))

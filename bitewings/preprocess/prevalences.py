@@ -1,5 +1,11 @@
+import argparse
 from collections import defaultdict
 from pathlib import Path
+import sys
+
+sys.path.append(str(Path(__file__).resolve().parents[2]))
+
+from bitewings import paths
 
 import numpy as np
 from pycocotools.coco import COCO
@@ -70,7 +76,13 @@ def process_dataset(coco: COCO):
 
 
 if __name__ == '__main__':
-    root = Path('../data/Netherlands')
-    
+    parser = argparse.ArgumentParser(description='Print tooth-finding prevalences.')
+    parser.add_argument(
+        '--data-root', type=Path, default=paths.data_root(),
+        help='Folder with annotations_fdi.json (default: $BITEWINGS_DATA_ROOT '
+             f'or {paths.DEFAULT_DATA_ROOT}).',
+    )
+    root = parser.parse_args().data_root
+
     coco = COCO(root / 'annotations_fdi.json')
     process_dataset(coco)

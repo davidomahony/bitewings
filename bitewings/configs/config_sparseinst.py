@@ -1,3 +1,5 @@
+import os
+
 _base_ = './config_maskrcnn.py'
 
 custom_imports = dict(
@@ -11,7 +13,7 @@ custom_imports = dict(
     allow_failed_imports=False,
 )
 
-work_dir = 'work_dirs/chart_filing_sparseinst/'
+work_dir = os.path.join(_base_.work_dirs, 'chart_filing_sparseinst', '')
 
 model = dict(
     _delete_=True,
@@ -78,7 +80,7 @@ model = dict(
             loss_weight=2.0),
     ),
     test_cfg=dict(score_thr=0.005, mask_thr_binary=0.45))
-load_from = '../checkpoints/sparseinst_odonto.pth'
+load_from = os.path.join(_base_.checkpoints_dir, 'sparseinst_odonto.pth')
 
 train_dataloader = dict(
     num_workers=5,

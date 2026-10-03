@@ -1,9 +1,12 @@
+import os
 import sys
 
 _base_ = '../../onedl-mmdetection/projects/DENTEX/configs/maskdino_r50_coco_multilabel.py'
 
-sys.path.append('.')
-sys.path.append('onedl-mmdetection')
+# make the repository and the mmdetection submodule importable from any working directory
+repo_dir = os.path.abspath(os.path.join('{{ fileDirname }}', '..', '..'))
+sys.path.append(repo_dir)
+sys.path.append(os.path.join(repo_dir, 'onedl-mmdetection'))
 
 custom_imports = dict(
     imports=[
@@ -23,9 +26,11 @@ custom_imports = dict(
     allow_failed_imports=False,
 )
 
-root = '../data/Netherlands/'
+# paths come from BITEWINGS_DATA_ROOT / BITEWINGS_WORK_DIRS / BITEWINGS_CHECKPOINTS (see bitewings/paths.py)
+root = os.path.join('{{$BITEWINGS_DATA_ROOT:../data/Netherlands}}', '')
+checkpoints_dir = '{{$BITEWINGS_CHECKPOINTS:../checkpoints}}'
 fold = 1
-work_dir = 'work_dirs/chart_filing_hierarchical/'
+work_dir = os.path.join('{{$BITEWINGS_WORK_DIRS:work_dirs}}', 'chart_filing_hierarchical', '')
 merge_layers = True
 share_mlp = True
 
@@ -240,4 +245,4 @@ default_hooks = dict(
 
 visualizer = dict(type='MulticlassDetLocalVisualizer')
 
-load_from = '../checkpoints/maskdino_odonto.pth'
+load_from = os.path.join(checkpoints_dir, 'maskdino_odonto.pth')

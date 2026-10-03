@@ -1,11 +1,16 @@
 import argparse
 from pathlib import Path
+import sys
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from pycocotools.coco import COCO
 import pycocotools.mask as maskUtils
+
+sys.path.append(str(Path(__file__).resolve().parents[2]))
+
+from bitewings import paths
 
 
 def coco_to_rle(ann, h, w):
@@ -67,9 +72,14 @@ if __name__ == '__main__':
         'method', choices=['hierarchical', 'maskdino', 'maskrcnn', 'sparseinst'],
         help='Method that has done predictions to convert to COCO format.',
     )
+    parser.add_argument(
+        '--work-dirs', type=Path, default=paths.work_dirs(),
+        help='Folder with the chart_filing_<method> run folders (default: $BITEWINGS_WORK_DIRS '
+             f'or {paths.DEFAULT_WORK_DIRS}).',
+    )
     args = parser.parse_args()
 
     main(
         args.in_dir,
-        Path(f'work_dirs/chart_filing_{args.method}/pred.json'),
+        paths.method_work_dir(args.method, args.work_dirs) / 'pred.json',
     )

@@ -1,3 +1,5 @@
+import os
+
 _base_ = './config_maskdino.py'
 
 custom_imports = dict(
@@ -89,5 +91,5 @@ optim_wrapper = dict(
     optimizer=dict(_delete_=True, type='AdamW', lr=0.00005, weight_decay=0.05))
 
 
-load_from = '../checkpoints/sparseinst_coco.pth'
-work_dir = 'work_dirs/odonto_bitewings_sparseinst'
+load_from = os.path.join(_base_.checkpoints_dir, 'sparseinst_coco.pth')
+work_dir = os.path.join(_base_.work_dirs, 'odonto_bitewings_sparseinst')

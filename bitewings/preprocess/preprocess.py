@@ -1,12 +1,14 @@
+import argparse
 import json
 from pathlib import Path
 
 from pycocotools.coco import COCO
 from tqdm import tqdm
 
-import os, sys
-sys.path.append(os.getcwd())
+import sys
+sys.path.append(str(Path(__file__).resolve().parents[2]))
 
+from bitewings import paths
 from bitewings.preprocess.add_fdis import (
     add_categories_with_fdi,
     determine_tooth_matches,
@@ -16,7 +18,16 @@ from bitewings.preprocess.split_images import split
 
 
 if __name__ == '__main__':
-    root = Path('../data/Netherlands')
+    parser = argparse.ArgumentParser(
+        description='Match tooth findings to FDI numbers and make k-fold splits.',
+    )
+    parser.add_argument(
+        '--data-root', type=Path, default=paths.data_root(),
+        help='Folder with images/ and annotations.json (default: $BITEWINGS_DATA_ROOT '
+             f'or {paths.DEFAULT_DATA_ROOT}).',
+    )
+    args = parser.parse_args()
+    root = args.data_root
 
     # Match tooth finding to corresponding FDI number
     coco = COCO(root / 'annotations.json')
