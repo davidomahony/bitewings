@@ -1,0 +1,10 @@
+.git
+**/.git
+**/__pycache__
+*.pth
+work_dirs
+data
+checkpoints
+side_by_side
+onedl-mmdetection/mmdet/.mim
+onedl-mmdetection/work_dirs

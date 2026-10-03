@@ -38,9 +38,36 @@ python onedl-mmdetection/tools/train.py bitewings/configs/config_hierarchical.py
 ```
 
 
+## Docker
+
+Two images are provided; build either from the repository root with the submodule checked out:
+
+```bash
+docker build -f docker/Dockerfile.cpu -t bitewings:cpu .   # inference, preprocessing, smoke tests
+docker build -f docker/Dockerfile.gpu -t bitewings:gpu .   # training (CUDA 12.9, ~20-40 min build)
+```
+
+Both set `BITEWINGS_DATA_ROOT=/data`, `BITEWINGS_CHECKPOINTS=/checkpoints` and `BITEWINGS_WORK_DIRS=/work_dirs`, so mount those folders:
+
+```bash
+docker run --rm --gpus all -v <data>:/data -v <checkpoints>:/checkpoints -v <runs>:/work_dirs bitewings:gpu \
+  python onedl-mmdetection/tools/train.py bitewings/configs/config_finetune.py
+```
+
+
 ## Inference
 
-To run the model on your own bitewings, first make an empty COCO file by running `bitewings/inference/init_images.py`. The model can be run on these images using this command:
+The simplest way to run the hierarchical model on a folder of bitewings is `config_inference.py`:
+
+```bash
+python bitewings/inference/init_images.py <images>
+BITEWINGS_IMAGES=<images> python onedl-mmdetection/tools/test.py \
+  bitewings/configs/config_inference.py <checkpoints>/hierarchical_chartfiling.pth
+```
+
+Predictions are written to `<images>/detections.pkl`. By default it uses low-memory post-processing (`BITEWINGS_LOW_MEMORY=1`): candidates with a class probability below 0.1 are dropped before full-resolution masks are built and each tooth keeps one FDI label, so CPU inference fits in about 3 GB of RAM. Detections scoring 0.1 or higher are unchanged; set `BITEWINGS_LOW_MEMORY=0` to reproduce the original post-processing exactly.
+
+Alternatively, to run the model on your own bitewings with any architecture, first make an empty COCO file by running `bitewings/inference/init_images.py`. The model can be run on these images using this command:
 
 ```bash
 export IN_DIR=`realpath "<path>"`
@@ -90,6 +117,17 @@ PYTHONPATH=. python onedl-mmdetection/tools/train.py bitewings/configs/config_<m
 ```
 
 choosing a model architecture for `<model>`. Please note that the hierarchical instance segmentation method requires at least 20 GPU hours to complete training.
+
+### Fine-tuning the released model on new data
+
+To add data to the already-trained model rather than reproduce the paper, use `config_finetune.py`. It starts from `hierarchical_chartfiling.pth` and trains for 12 epochs at a learning rate of 2e-5 (10x lower for the last quarter):
+
+```bash
+BITEWINGS_TRAIN_ANN=splits/train_fdi_1.json BITEWINGS_VAL_ANN=splits/val_fdi_1.json \
+  python onedl-mmdetection/tools/train.py bitewings/configs/config_finetune.py
+```
+
+The annotation files must be in the hierarchical (`*_fdi_*.json`) format produced by `bitewings/preprocess/preprocess.py`. Further settings (`BITEWINGS_EPOCHS`, `BITEWINGS_LR`, `BITEWINGS_BATCH_SIZE`, `BITEWINGS_NUM_WORKERS`, `BITEWINGS_RUN_NAME`, `BITEWINGS_INIT_CHECKPOINT`) are documented at the top of the config. The best checkpoint by aggregate finding F1 and the latest checkpoint are kept in `$BITEWINGS_WORK_DIRS/<run name>`.
 
 
 ### Evaluation
