@@ -34,6 +34,10 @@ work_dir = os.path.join(
     '{{$BITEWINGS_RUN_NAME:finetune_hierarchical}}',
     '',
 )
+# load_from replaces every weight, so skip downloading the ImageNet ResNet-50 the
+# backbone would otherwise be initialised from (also lets training run offline)
+model = dict(backbone=dict(init_cfg=None))
+
 train_ann = '{{$BITEWINGS_TRAIN_ANN:splits/train_fdi_1.json}}'
 val_ann = '{{$BITEWINGS_VAL_ANN:splits/val_fdi_1.json}}'
 max_epochs = int('{{$BITEWINGS_EPOCHS:12}}')
