@@ -16,6 +16,21 @@ from mmcv.transforms import BaseTransform
 from mmdet.registry import TRANSFORMS
 from mmdet.structures.bbox import HorizontalBoxes
 
+@TRANSFORMS.register_module()
+class MarkPartialFindings(BaseTransform):
+    """Flag images whose teeth are labelled but whose findings were never annotated.
+
+    The flag travels to the loss via the data sample's metainfo (add
+    'partial_findings' to the packing transform's meta_keys); the DENTEX MaskDINO
+    criterion then supervises tooth outlines and numbers only for these images,
+    instead of learning that their teeth have no fillings, caries, etc.
+    """
+
+    def transform(self, results: dict) -> dict:
+        results['partial_findings'] = True
+        return results
+
+
 # per-instance arrays that must stay aligned when teeth are dropped
 INSTANCE_KEYS = (
     'gt_bboxes_labels', 'gt_bboxes_multilabels', 'gt_ignore_flags', 'gt_instances_ids',

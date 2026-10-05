@@ -127,6 +127,22 @@ BITEWINGS_TRAIN_ANN=splits/train_fdi_1.json BITEWINGS_VAL_ANN=splits/val_fdi_1.j
   python onedl-mmdetection/tools/train.py bitewings/configs/config_finetune.py
 ```
 
+### Adding front teeth from DENTEX panoramics
+
+The Radboud bitewings contain almost no incisors, so the released model rarely finds front teeth on periapicals. [DENTEX](https://huggingface.co/datasets/ibrahimhamamci/DENTEX) (MICCAI 2023, **CC BY-NC-SA 4.0, non-commercial**) numbers every tooth of 634 panoramics. `config_finetune_dentex.py` trains on the Radboud bitewings plus periapical-style crops of these panoramics (`CropPeriapical`, front teeth included). DENTEX has no finding labels, so its images are flagged with `MarkPartialFindings` and only teach tooth outlines and numbers; findings are still learned from Radboud.
+
+```bash
+# once: convert DENTEX's quadrant_enumeration set and split it 80/10/10
+python bitewings/dentex/convert.py --dentex-root <DENTEX>/training_data/quadrant_enumeration
+# optional: look at what training will see
+python bitewings/dentex/preview_crops.py --dentex-root <...>/quadrant_enumeration --out-dir crop_preview
+
+BITEWINGS_DENTEX_ROOT=<...>/quadrant_enumeration \
+  python onedl-mmdetection/tools/train.py bitewings/configs/config_finetune_dentex.py
+```
+
+Models trained with DENTEX inherit its non-commercial license.
+
 The annotation files must be in the hierarchical (`*_fdi_*.json`) format produced by `bitewings/preprocess/preprocess.py`. Further settings (`BITEWINGS_EPOCHS`, `BITEWINGS_LR`, `BITEWINGS_BATCH_SIZE`, `BITEWINGS_NUM_WORKERS`, `BITEWINGS_RUN_NAME`, `BITEWINGS_INIT_CHECKPOINT`) are documented at the top of the config. The best checkpoint by aggregate finding F1 and the latest checkpoint are kept in `$BITEWINGS_WORK_DIRS/<run name>`.
 
 
