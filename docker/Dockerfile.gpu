@@ -16,9 +16,13 @@ COPY pip_requirements.txt mim_requirements.txt ./
 # pip_requirements.txt pins the CUDA 12.9 build of torch 2.10
 RUN pip install --no-cache-dir setuptools wheel -r pip_requirements.txt
 
-# compile onedl-mmcv's CUDA ops for A100 (8.0), A10/A40/RTX 30xx (8.6),
-# L4/L40/RTX 40xx (8.9) and H100 (9.0); no GPU is needed at build time
-ENV MMCV_WITH_OPS=1 FORCE_CUDA=1 TORCH_CUDA_ARCH_LIST="8.0;8.6;8.9;9.0" MAX_JOBS=8
+# compile onedl-mmcv's CUDA ops for T4/RTX 20xx (7.5), A100 (8.0), A10/A4000/RTX 30xx (8.6),
+# L4/L40/RTX 40xx (8.9) and H100 (9.0); no GPU is needed at build time. Building for only
+# your GPU is faster, e.g. --build-arg TORCH_CUDA_ARCH_LIST=7.5 for a T4. Recent CUDA 12.x
+# torch wheels have dropped older GPUs such as V100/P100: check that
+# python -c "import torch; print(torch.cuda.get_arch_list())" lists your GPU's sm_XX.
+ARG TORCH_CUDA_ARCH_LIST="7.5;8.0;8.6;8.9;9.0"
+ENV MMCV_WITH_OPS=1 FORCE_CUDA=1 TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} MAX_JOBS=8
 RUN pip install --no-cache-dir --no-build-isolation -r mim_requirements.txt
 
 COPY onedl-mmdetection onedl-mmdetection

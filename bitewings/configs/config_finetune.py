@@ -20,6 +20,9 @@ setting below can be changed with an environment variable:
     BITEWINGS_LR               peak learning rate (2e-5; the original recipe uses 1e-4 from scratch)
     BITEWINGS_BATCH_SIZE       images per GPU (2)
     BITEWINGS_NUM_WORKERS      data-loading processes (4; use 0 on Windows or for debugging)
+    BITEWINGS_ACCUMULATE       batches to accumulate per optimizer step (1). On a 16 GB GPU use
+                               BITEWINGS_BATCH_SIZE=1 BITEWINGS_ACCUMULATE=2: same effective batch of 2
+                               and the same learning rate as the original recipe, at about half the memory
 """
 import os
 
@@ -44,6 +47,7 @@ max_epochs = int('{{$BITEWINGS_EPOCHS:12}}')
 lr = float('{{$BITEWINGS_LR:2e-5}}')
 batch_size = int('{{$BITEWINGS_BATCH_SIZE:2}}')
 num_workers = int('{{$BITEWINGS_NUM_WORKERS:4}}')
+accumulate = int('{{$BITEWINGS_ACCUMULATE:1}}')
 
 train_dataloader = dict(
     batch_size=batch_size,
@@ -68,7 +72,7 @@ param_scheduler = [dict(
     milestones=[max(1, round(max_epochs * 0.75))],
     gamma=0.1,
 )]
-optim_wrapper = dict(optimizer=dict(lr=lr))
+optim_wrapper = dict(optimizer=dict(lr=lr), accumulative_counts=accumulate)
 
 # keep the best checkpoint (by the authors' aggregate F1) plus the latest one
 default_hooks = dict(checkpoint=dict(max_keep_ckpts=1))
