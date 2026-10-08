@@ -1,0 +1,3 @@
+# shell scripts run on Linux GPU hosts: always LF
+*.sh text eol=lf
+Dockerfile* text eol=lf
