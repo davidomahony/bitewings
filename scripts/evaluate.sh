@@ -22,8 +22,14 @@ if [ "${SKIP_RADBOUD:-0}" != 1 ]; then
     echo "=== $NAME: Radboud fold-1 validation"
     BITEWINGS_WORK_DIRS="$OUT/radboud" python onedl-mmdetection/tools/test.py \
         bitewings/configs/config_hierarchical.py "$CKPT" > "$OUT/radboud_val.log" 2>&1
-    grep -E "Epoch\(test\).*\[[0-9]+/[0-9]+\] +[a-z_]+/" "$OUT/radboud_val.log" | tail -1 \
-        | tee "$OUT/radboud_val_metrics.txt"
+    # the summary line starts with Epoch(test) or Iter(test) depending on the mmengine version
+    grep -E "(Epoch|Iter)\(test\).*\[[0-9]+/[0-9]+\] +[a-z_]+/" "$OUT/radboud_val.log" | tail -1 \
+        | tee "$OUT/radboud_val_metrics.txt" \
+        || echo "WARNING: no metrics summary found in $OUT/radboud_val.log"
+    echo "=== $NAME: Radboud per-finding AUC / F1"
+    python bitewings/evaluation/findings_summary.py "$OUT/radboud/chart_filing_hierarchical" \
+        --out "$OUT/findings.json" 2> "$OUT/findings.log" | tee "$OUT/findings.txt" \
+        || echo "WARNING: findings summary failed, see $OUT/findings.log"
 fi
 
 echo "=== $NAME: DENTEX front/back numbering"
