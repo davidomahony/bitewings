@@ -9,6 +9,8 @@
 #     checkpoints/hierarchical_chartfiling.pth                                         (CC BY 4.0)
 #     dentex/quadrant_enumeration/  DENTEX numbered panoramics + splits/               (CC BY-NC-SA 4.0)
 #     dentex/eval_crops/          fixed periapical-style test crops + annotations_gt.json
+#     denpar/Dataset/             DenPAR real periapicals + FDI-numbered splits/        (CC BY 4.0)
+#     denpar/eval_real/           held-out real periapicals (DenPAR val + test) + annotations_gt.json
 # and prints the BITEWINGS_* variables to export. Needs ~20 GB free during the DENTEX step.
 set -euo pipefail
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
@@ -18,6 +20,9 @@ log() { echo -e "\n=== $*"; }
 RADBOUD="https://webdav.data.ru.nl/rumc/carrest_t0000028a_dsc_813_v2"
 STUDY="Automated%20Chart%20Filing%20on%20Bitewings%20Using%20Deep%20Learning%20Enhancing%20Clinical%20Diagnosis%20in%20a%20Multi-Center%20Study"
 DENTEX_ZIP="https://huggingface.co/datasets/ibrahimhamamci/DENTEX/resolve/main/DENTEX/training_data.zip"
+DENPAR_RECORD="https://zenodo.org/records/16645076"
+DENPAR_ZIP="$DENPAR_RECORD/files/DenPAR%20Radiographs%20Dataset.zip?download=1"
+DENPAR_MD5=4fcecde6bfa4dc47daec83b1f7856c7f
 
 # SHA-256 of the files the published baseline was computed on
 declare -A EXPECTED=(
@@ -26,6 +31,11 @@ declare -A EXPECTED=(
     [dentex/quadrant_enumeration/splits/test_fdi.json]=b8c72329181ce86d6de3e08946d631ed7492d7ef1cc4eb584c4e7d85b9e21744
     [dentex/eval_crops/annotations_gt.json]=46a746ee8ad174b2e301ac7fc24589b1de38cff87b8d48fe068856b629e6d50f
     [dentex/eval_crops/images/coco.json]=07bf989ca0d225a7e6b394ffa3fce843070590fc853a4b875fa065acfd9da65c
+    [denpar/Dataset/splits/train_fdi.json]=ae85126b5c6c9f002b13a7c9f858bdc35fb91cbecc5f2375065a0f7f5d8f783e
+    [denpar/Dataset/splits/val_fdi.json]=f28f5397489b7de1aea53364dbe6a27a977f8f37a3cd4d5878a76e0bbece88c9
+    [denpar/Dataset/splits/test_fdi.json]=e8ed3035f1ff197d91637777cb6fd084ae3955389c26b8c6dc0838470f133293
+    [denpar/eval_real/annotations_gt.json]=e860ae36f74458e357e33b2666129fa56d309904d51a474ec84465024acd388a
+    [denpar/eval_real/images/coco.json]=bb95073a82f13b1e81ada80b3722d6bb4fac46c8c6d82857569021d5b0c78728
 )
 
 log "Radboud bitewings and checkpoint -> $OUT"
@@ -83,6 +93,27 @@ log "Fixed DENTEX evaluation crops"
 [ -f "$OUT/dentex/eval_crops/annotations_gt.json" ] || \
     python "$REPO/bitewings/dentex/make_eval_crops.py" --dentex-root "$QE" --out-dir "$OUT/dentex/eval_crops"
 
+log "DenPAR real periapicals"
+DP="$OUT/denpar"
+if [ ! -f "$DP/Dataset/Characteristics of radiographs included.xlsx" ]; then
+    mkdir -p "$DP"
+    # Zenodo rejects bare scripted requests (HTTP 403); browser headers and the record as referer work
+    curl -sSL --fail --retry 5 --retry-delay 10 -o "$DP/DenPAR.zip" \
+        -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36" \
+        -H "Accept: */*" -H "Referer: $DENPAR_RECORD" "$DENPAR_ZIP"
+    [ "$(md5sum "$DP/DenPAR.zip" | cut -d' ' -f1)" = "$DENPAR_MD5" ] || { echo "DenPAR MD5 MISMATCH"; exit 1; }
+    python3 -c "import sys, zipfile; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])" "$DP/DenPAR.zip" "$DP"
+    rm -f "$DP/DenPAR.zip"
+fi
+echo "$(ls "$DP/Dataset/Training/Images" | wc -l) training images, MD5 verified on download"
+if [ ! -f "$DP/Dataset/splits/train_fdi.json" ]; then
+    # the metadata is an .xlsx; pandas needs openpyxl to read it
+    python -c "import openpyxl" 2>/dev/null || pip install -q openpyxl
+    python "$REPO/bitewings/denpar/convert.py" --denpar-root "$DP/Dataset"
+fi
+[ -f "$DP/eval_real/annotations_gt.json" ] || \
+    python "$REPO/bitewings/denpar/make_eval_set.py" --denpar-root "$DP/Dataset" --out-dir "$DP/eval_real"
+
 log "Checking the files the baseline was computed on"
 status=0
 for rel in "${!EXPECTED[@]}"; do
@@ -101,4 +132,6 @@ export BITEWINGS_DATA_ROOT=$OUT/Netherlands
 export BITEWINGS_CHECKPOINTS=$OUT/checkpoints
 export BITEWINGS_DENTEX_ROOT=$QE
 export BITEWINGS_EVAL_CROPS=$OUT/dentex/eval_crops
+export BITEWINGS_DENPAR_ROOT=$DP/Dataset
+export BITEWINGS_EVAL_REAL=$DP/eval_real
 EOF
