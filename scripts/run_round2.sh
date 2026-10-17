@@ -26,9 +26,14 @@ if [ "${AUTOSTOP:-1}" = 1 ]; then
 fi
 
 stamp "SETUP"
-if [ ! -x /opt/venv/bin/python ] || ! /opt/venv/bin/python -c "import mmdet, mmcv.ops" 2>/dev/null; then
-    bash scripts/setup_gpu_native.sh || { stamp "SETUP FAILED"; exit 1; }
-fi
+# the PyTorch wheels are large and some hosts' links to PyPI are slow: wait longer, retry setup
+export PIP_DEFAULT_TIMEOUT="${PIP_DEFAULT_TIMEOUT:-180}" PIP_RETRIES="${PIP_RETRIES:-10}"
+for attempt in 1 2 3; do
+    if [ -x /opt/venv/bin/python ] && /opt/venv/bin/python -c "import mmdet, mmcv.ops" 2>/dev/null; then break; fi
+    [ "$attempt" = 1 ] || stamp "setup attempt $attempt"
+    bash scripts/setup_gpu_native.sh && break
+    [ "$attempt" = 3 ] && { stamp "SETUP FAILED"; exit 1; }
+done
 # shellcheck disable=SC1091
 source /opt/venv/bin/activate
 
