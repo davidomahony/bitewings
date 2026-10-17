@@ -18,6 +18,8 @@ Besides the variables of config_finetune.py and config_finetune_dentex.py:
     BITEWINGS_DENPAR_TRAIN_ANN  DenPAR training annotations (splits/train_fdi.json)
     BITEWINGS_DENPAR_REPEAT     times each DenPAR image is repeated per epoch (2; real anterior
                                 periapicals are scarce, so they are seen more often)
+    BITEWINGS_USE_DENTEX        1 (default) to include the DENTEX crops; 0 for the control run
+                                (Radboud + DenPAR only), which shows what DENTEX still adds
 """
 import os
 
@@ -26,6 +28,7 @@ _base_ = './config_finetune_dentex.py'
 denpar_root = os.path.join('{{$BITEWINGS_DENPAR_ROOT:../data/denpar/Dataset}}', '')
 denpar_train_ann = '{{$BITEWINGS_DENPAR_TRAIN_ANN:splits/train_fdi.json}}'
 denpar_repeat = int('{{$BITEWINGS_DENPAR_REPEAT:2}}')
+use_dentex = '{{$BITEWINGS_USE_DENTEX:1}}' == '1'
 
 run_name = '{{$BITEWINGS_RUN_NAME:finetune_round2}}'
 work_dir = os.path.join('{{$BITEWINGS_WORK_DIRS:work_dirs}}', run_name, '')
@@ -62,5 +65,6 @@ train_dataloader = dict(dataset=dict(
     type='InstanceBalancedDataset',
     oversample_thr=0.1,
     dataset=dict(type='ConcatDataset',
-                 datasets=[_base_.radboud_train, _base_.dentex_train, denpar_train]),
+                 datasets=[_base_.radboud_train] + ([_base_.dentex_train] if use_dentex else [])
+                 + [denpar_train]),
 ))
