@@ -47,8 +47,12 @@ export BITEWINGS_EPOCHS="${EPOCHS:-12}" BITEWINGS_NUM_WORKERS=4
 train_and_score() {  # $1 run name; remaining args: extra env assignments
     local name=$1; shift
     stamp "TRAIN $name"
+    # --resume only when there is a checkpoint: tools/train.py --resume also clears load_from,
+    # so on a fresh run it would silently train from random weights instead of the released model
+    local resume=()
+    [ -f "$RUNS/$name/last_checkpoint" ] && resume=(--resume) && stamp "resuming $name"
     env "$@" BITEWINGS_RUN_NAME="$name" python onedl-mmdetection/tools/train.py \
-        bitewings/configs/config_finetune_round2.py --resume >> "$RUNS/$name.train.log" 2>&1 \
+        bitewings/configs/config_finetune_round2.py "${resume[@]}" >> "$RUNS/$name.train.log" 2>&1 \
         || { stamp "TRAIN $name FAILED"; tail -25 "$RUNS/$name.train.log"; return 1; }
     local best last
     best=$(ls -t "$RUNS/$name"/best_*.pth 2>/dev/null | head -1)
